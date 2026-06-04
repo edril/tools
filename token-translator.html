@@ -108,7 +108,7 @@
     color: var(--text-muted);
   }
 
-  input[type="text"], textarea {
+  input[type="text"] {
     width: 100%;
     height: 36px;
     padding: 0 10px;
@@ -122,17 +122,29 @@
     transition: border-color 0.15s;
   }
 
-  input[type="text"]:focus, textarea:focus {
+  input[type="text"]:focus {
     border-color: var(--border-hover);
   }
 
   textarea {
-    height: 90px;
+    width: 100%;
+    min-height: 60px;
     padding: 8px 10px;
-    resize: vertical;
     font-family: var(--font-mono);
     font-size: 13px;
     line-height: 1.5;
+    color: var(--text);
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.15s;
+    overflow-y: auto;
+  }
+
+  textarea:focus {
+    border-color: var(--border-hover);
   }
 
   .tab-bar {
@@ -167,11 +179,11 @@
   .string-row {
     display: flex;
     gap: 6px;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 8px;
   }
 
-  .string-row input { flex: 1; }
+  .string-row textarea { flex: 1; }
 
   .remove-btn {
     background: none;
@@ -180,9 +192,10 @@
     color: var(--text-muted);
     font-size: 18px;
     line-height: 1;
-    padding: 4px;
+    padding: 8px 4px;
     border-radius: 4px;
     transition: color 0.12s;
+    flex-shrink: 0;
   }
 
   .remove-btn:hover { color: var(--text); }
@@ -280,7 +293,7 @@
 
   .output-item:last-child { border-bottom: none; }
 
-  .output-item .token-unresolved {
+  .token-unresolved {
     color: #c0523c;
     background: rgba(192,82,60,0.1);
     border-radius: 3px;
@@ -333,7 +346,7 @@
       </div>
 
       <div id="panel-csv" class="panel">
-        <textarea id="csv-input" placeholder="One template per line:&#10;Hello {a}, your ref is {b}&#10;Order {a}-{c} confirmed"></textarea>
+        <textarea id="csv-input" style="min-height:120px" placeholder="One template per line:&#10;Hello {a}, your ref is {b}&#10;Order {a}-{c} confirmed"></textarea>
         <p class="hint">One template per line. Tokens use <code style="font-size:11px">{a}</code> through <code style="font-size:11px">{j}</code> notation.</p>
       </div>
     </div>
@@ -341,10 +354,10 @@
   </div>
 
   <div class="actions">
-    <button class="btn-primary" onclick="translate()">
+    <button class="btn-primary" id="run-btn">
       Translate <i class="ti ti-arrow-right" aria-hidden="true"></i>
     </button>
-    <button class="btn-clear" onclick="clearAll()">clear all</button>
+    <button class="btn-clear" id="clear-btn">clear all</button>
   </div>
 
   <div id="error-msg" class="error"></div>
@@ -352,7 +365,7 @@
   <div class="output-section" id="output-section">
     <div class="output-header">
       <p class="section-label" style="margin:0">Output</p>
-      <button class="btn-ghost" onclick="copyOutput()" style="margin:0">
+      <button class="btn-ghost" id="copy-btn" style="margin:0">
         <i class="ti ti-copy" aria-hidden="true"></i> copy
       </button>
     </div>
@@ -372,10 +385,9 @@ function addToken() {
   const div = document.createElement('div');
   div.className = 'token-row';
   div.id = 'tr-' + lbl;
-  div.innerHTML = `
-    <div class="token-badge">{${lbl}}</div>
-    <input type="text" id="tv-${lbl}" placeholder="value for {${lbl}}" autocomplete="off">
-  `;
+  div.innerHTML =
+    '<div class="token-badge">{' + lbl + '}</div>' +
+    '<input type="text" id="tv-' + lbl + '" placeholder="value for {' + lbl + '}" autocomplete="off">';
   document.getElementById('token-inputs').appendChild(div);
   tokenCount++;
   if (tokenCount >= 10) document.getElementById('add-token-btn').style.display = 'none';
@@ -388,11 +400,13 @@ function addString() {
   const div = document.createElement('div');
   div.className = 'string-row';
   div.id = 'sr-' + n;
-  div.innerHTML = `
-    <input type="text" id="${id}" placeholder="e.g. Hello {a}, order {b}" autocomplete="off">
-    <button class="remove-btn" onclick="removeString(${n})" aria-label="remove string">×</button>
-  `;
+  div.innerHTML =
+    '<textarea id="' + id + '" placeholder="e.g. Hello {a}, order {b}" rows="2"></textarea>' +
+    '<button class="remove-btn" data-target="' + n + '" aria-label="remove string">\u00d7</button>';
   document.getElementById('string-inputs').appendChild(div);
+  div.querySelector('.remove-btn').addEventListener('click', function() {
+    removeString(parseInt(this.getAttribute('data-target')));
+  });
   stringCount++;
 }
 
@@ -402,8 +416,8 @@ function removeString(n) {
 }
 
 function switchTab(name, btn) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
   btn.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
 }
@@ -423,7 +437,7 @@ function getStrings() {
   if (csvActive) {
     const raw = document.getElementById('csv-input').value.trim();
     if (!raw) return [];
-    return raw.split('\n').map(l => l.trim()).filter(Boolean);
+    return raw.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
   }
   const out = [];
   for (let i = 0; i < stringCount; i++) {
@@ -437,7 +451,7 @@ function escHtml(s) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function translate() {
+function runTranslate() {
   const err = document.getElementById('error-msg');
   err.textContent = '';
   const map = getTokenMap();
@@ -449,14 +463,14 @@ function translate() {
   }
 
   const box = document.getElementById('output-box');
-  box.innerHTML = strings.map(s => {
-    const rendered = s.replace(/\{([a-j])\}/g, (match, lbl) => {
+  box.innerHTML = strings.map(function(s) {
+    const rendered = s.replace(/\{([a-j])\}/g, function(match, lbl) {
       if (lbl in map && map[lbl] !== '') {
         return escHtml(map[lbl]);
       }
-      return `<span class="token-unresolved">${escHtml(match)}</span>`;
+      return '<span class="token-unresolved">' + escHtml(match) + '</span>';
     });
-    return `<div class="output-item">${rendered}</div>`;
+    return '<div class="output-item">' + rendered + '</div>';
   }).join('');
 
   document.getElementById('output-section').style.display = 'block';
@@ -464,8 +478,8 @@ function translate() {
 
 function copyOutput() {
   const items = document.querySelectorAll('#output-box .output-item');
-  const text = Array.from(items).map(i => i.textContent).join('\n');
-  navigator.clipboard.writeText(text).catch(() => {});
+  const text = Array.from(items).map(function(i) { return i.textContent; }).join('\n');
+  navigator.clipboard.writeText(text).catch(function() {});
 }
 
 function clearAll() {
@@ -480,6 +494,10 @@ function clearAll() {
   addToken(); addToken(); addToken();
   addString(); addString();
 }
+
+document.getElementById('run-btn').addEventListener('click', runTranslate);
+document.getElementById('clear-btn').addEventListener('click', clearAll);
+document.getElementById('copy-btn').addEventListener('click', copyOutput);
 
 addToken(); addToken(); addToken();
 addString(); addString();
