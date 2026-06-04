@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Token Translator</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f6f6f4;
+    --bg-tertiary: #eeede9;
+    --text: #1a1a18;
+    --text-muted: #6b6b67;
+    --border: rgba(0,0,0,0.12);
+    --border-hover: rgba(0,0,0,0.25);
+    --accent: #1a1a18;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --font: 'DM Sans', system-ui, sans-serif;
+    --font-mono: 'DM Mono', 'Fira Mono', monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg-secondary: #252523;
+      --bg-tertiary: #2e2e2b;
+      --text: #f0efe9;
+      --text-muted: #8a8a84;
+      --border: rgba(255,255,255,0.1);
+      --border-hover: rgba(255,255,255,0.25);
+      --accent: #f0efe9;
+    }
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap');
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 2rem;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 500;
+    letter-spacing: -0.3px;
+  }
+
+  header p {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  .section-label {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+
+  .token-row {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .token-badge {
+    background: var(--bg-tertiary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  input[type="text"], textarea {
+    width: 100%;
+    height: 36px;
+    padding: 0 10px;
+    font-family: var(--font);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  input[type="text"]:focus, textarea:focus {
+    border-color: var(--border-hover);
+  }
+
+  textarea {
+    height: 90px;
+    padding: 8px 10px;
+    resize: vertical;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .tab-bar {
+    display: flex;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 7px;
+    font-size: 13px;
+    font-family: var(--font);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: background 0.12s, color 0.12s;
+  }
+
+  .tab.active {
+    background: var(--bg-secondary);
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .string-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .string-row input { flex: 1; }
+
+  .remove-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 18px;
+    line-height: 1;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.12s;
+  }
+
+  .remove-btn:hover { color: var(--text); }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font);
+    font-size: 13px;
+    padding: 6px 12px;
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s, color 0.12s;
+    margin-top: 4px;
+  }
+
+  .btn-ghost:hover {
+    background: var(--bg-secondary);
+    border-color: var(--border-hover);
+    color: var(--text);
+  }
+
+  .actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 9px 20px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: opacity 0.12s, transform 0.1s;
+  }
+
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .btn-clear {
+    font-family: var(--font);
+    font-size: 13px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px 8px;
+    border-radius: var(--radius);
+    transition: color 0.12s;
+  }
+
+  .btn-clear:hover { color: var(--text); }
+
+  .output-section {
+    margin-top: 1.5rem;
+    display: none;
+  }
+
+  .output-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .output-box {
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    overflow: hidden;
+  }
+
+  .output-item {
+    padding: 10px 14px;
+    border-bottom: 0.5px solid var(--border);
+    line-height: 1.5;
+    word-break: break-word;
+    white-space: pre-wrap;
+  }
+
+  .output-item:last-child { border-bottom: none; }
+
+  .output-item .token-unresolved {
+    color: #c0523c;
+    background: rgba(192,82,60,0.1);
+    border-radius: 3px;
+    padding: 1px 4px;
+  }
+
+  .error {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #c0523c;
+  }
+
+  .hint {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>Token translator</h1>
+    <p>Assign values to tokens <code style="font-family:var(--font-mono);font-size:12px">{a}–{j}</code>, then translate your template strings.</p>
+  </header>
+
+  <div class="grid">
+
+    <div>
+      <p class="section-label">Token values</p>
+      <div id="token-inputs"></div>
+      <button class="btn-ghost" onclick="addToken()" id="add-token-btn">
+        <i class="ti ti-plus" aria-hidden="true"></i> add token
+      </button>
+    </div>
+
+    <div>
+      <p class="section-label">Template strings</p>
+      <div class="tab-bar">
+        <button class="tab active" onclick="switchTab('manual', this)">manual</button>
+        <button class="tab" onclick="switchTab('csv', this)">csv / paste</button>
+      </div>
+
+      <div id="panel-manual" class="panel active">
+        <div id="string-inputs"></div>
+        <button class="btn-ghost" onclick="addString()" id="add-str-btn">
+          <i class="ti ti-plus" aria-hidden="true"></i> add string
+        </button>
+      </div>
+
+      <div id="panel-csv" class="panel">
+        <textarea id="csv-input" placeholder="One template per line:&#10;Hello {a}, your ref is {b}&#10;Order {a}-{c} confirmed"></textarea>
+        <p class="hint">One template per line. Tokens use <code style="font-size:11px">{a}</code> through <code style="font-size:11px">{j}</code> notation.</p>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary" onclick="translate()">
+      Translate <i class="ti ti-arrow-right" aria-hidden="true"></i>
+    </button>
+    <button class="btn-clear" onclick="clearAll()">clear all</button>
+  </div>
+
+  <div id="error-msg" class="error"></div>
+
+  <div class="output-section" id="output-section">
+    <div class="output-header">
+      <p class="section-label" style="margin:0">Output</p>
+      <button class="btn-ghost" onclick="copyOutput()" style="margin:0">
+        <i class="ti ti-copy" aria-hidden="true"></i> copy
+      </button>
+    </div>
+    <div class="output-box" id="output-box"></div>
+  </div>
+
+</div>
+
+<script>
+const LABELS = 'abcdefghij';
+let tokenCount = 0;
+let stringCount = 0;
+
+function addToken() {
+  if (tokenCount >= 10) return;
+  const lbl = LABELS[tokenCount];
+  const div = document.createElement('div');
+  div.className = 'token-row';
+  div.id = 'tr-' + lbl;
+  div.innerHTML = `
+    <div class="token-badge">{${lbl}}</div>
+    <input type="text" id="tv-${lbl}" placeholder="value for {${lbl}}" autocomplete="off">
+  `;
+  document.getElementById('token-inputs').appendChild(div);
+  tokenCount++;
+  if (tokenCount >= 10) document.getElementById('add-token-btn').style.display = 'none';
+}
+
+function addString() {
+  if (stringCount >= 20) return;
+  const id = 'si-' + stringCount;
+  const n = stringCount;
+  const div = document.createElement('div');
+  div.className = 'string-row';
+  div.id = 'sr-' + n;
+  div.innerHTML = `
+    <input type="text" id="${id}" placeholder="e.g. Hello {a}, order {b}" autocomplete="off">
+    <button class="remove-btn" onclick="removeString(${n})" aria-label="remove string">×</button>
+  `;
+  document.getElementById('string-inputs').appendChild(div);
+  stringCount++;
+}
+
+function removeString(n) {
+  const el = document.getElementById('sr-' + n);
+  if (el) el.remove();
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function getTokenMap() {
+  const map = {};
+  for (let i = 0; i < tokenCount; i++) {
+    const lbl = LABELS[i];
+    const el = document.getElementById('tv-' + lbl);
+    if (el) map[lbl] = el.value;
+  }
+  return map;
+}
+
+function getStrings() {
+  const csvActive = document.getElementById('panel-csv').classList.contains('active');
+  if (csvActive) {
+    const raw = document.getElementById('csv-input').value.trim();
+    if (!raw) return [];
+    return raw.split('\n').map(l => l.trim()).filter(Boolean);
+  }
+  const out = [];
+  for (let i = 0; i < stringCount; i++) {
+    const el = document.getElementById('si-' + i);
+    if (el && el.value.trim()) out.push(el.value.trim());
+  }
+  return out;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function translate() {
+  const err = document.getElementById('error-msg');
+  err.textContent = '';
+  const map = getTokenMap();
+  const strings = getStrings();
+
+  if (!strings.length) {
+    err.textContent = 'Add at least one template string.';
+    return;
+  }
+
+  const box = document.getElementById('output-box');
+  box.innerHTML = strings.map(s => {
+    const rendered = s.replace(/\{([a-j])\}/g, (match, lbl) => {
+      if (lbl in map && map[lbl] !== '') {
+        return escHtml(map[lbl]);
+      }
+      return `<span class="token-unresolved">${escHtml(match)}</span>`;
+    });
+    return `<div class="output-item">${rendered}</div>`;
+  }).join('');
+
+  document.getElementById('output-section').style.display = 'block';
+}
+
+function copyOutput() {
+  const items = document.querySelectorAll('#output-box .output-item');
+  const text = Array.from(items).map(i => i.textContent).join('\n');
+  navigator.clipboard.writeText(text).catch(() => {});
+}
+
+function clearAll() {
+  document.getElementById('token-inputs').innerHTML = '';
+  document.getElementById('string-inputs').innerHTML = '';
+  document.getElementById('csv-input').value = '';
+  document.getElementById('output-section').style.display = 'none';
+  document.getElementById('error-msg').textContent = '';
+  document.getElementById('add-token-btn').style.display = '';
+  tokenCount = 0;
+  stringCount = 0;
+  addToken(); addToken(); addToken();
+  addString(); addString();
+}
+
+addToken(); addToken(); addToken();
+addString(); addString();
+</script>
+</body>
+</html>
